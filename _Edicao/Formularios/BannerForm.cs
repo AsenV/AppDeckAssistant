@@ -1,14 +1,12 @@
 ﻿using MetroFramework;
 using System;
-using System.Diagnostics;
-using System.Drawing;
-using System.Net;
-using System.Reflection;
-using System.Windows.Forms;
-using System.IO;
-using System.Drawing.Imaging;
-using System.Drawing.Drawing2D;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Net;
+using System.Windows.Forms;
 
 namespace AppDeckAssistant
 {
@@ -109,7 +107,7 @@ namespace AppDeckAssistant
         {
             InitializeComponent();
             InitializeEvents();
-            
+
             caminhoArquivoAtual = getCaminhoArquivoAtual;
             jogoId = getJogoID;
             posicaoJogo = getPosicaoJogo;

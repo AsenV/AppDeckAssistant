@@ -1,23 +1,21 @@
 ﻿using MetroFramework;
 using MetroFramework.Components;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Windows.Forms;
-using System.Xml.Linq;
-using Microsoft.WindowsAPICodePack.Dialogs;
-using System.Net; // Para WebClient
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using static Humanizer.On;
+using System.IO;
+using System.Linq;
+using System.Net; // Para WebClient
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Runtime.InteropServices.ComTypes;
+using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace AppDeckAssistant
 {
@@ -440,7 +438,7 @@ namespace AppDeckAssistant
                 }
             });
 
-            toolBar1.AddButton("Tools", new List<string> { "Auto Search IDs"}, index =>
+            toolBar1.AddButton("Tools", new List<string> { "Auto Search IDs" }, index =>
             {
                 if (index == 0)
                 {
@@ -482,7 +480,7 @@ namespace AppDeckAssistant
             FileVersionInfo versaoArquivo = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
             return versaoArquivo.FileVersion;
         }
-        
+
         private string ObterURLDeAtalho(string caminhoAtalho)
         {
             if (caminhoAtalho.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
@@ -586,8 +584,148 @@ namespace AppDeckAssistant
                     //txtAdress.Text = caminhoArquivoAtual;
                     listGames.Refresh();
                     UpdateTitle();
+                    //SeparateUsings();
                 }
             }
+        }
+
+        private void SeparateUsings()
+        {
+            string ProjUsings = ListUsings("C:\\_VSFiles\\Projects\\PC Solutions\\AppDeckAssistant");
+            string CSProjUsings = ExtractUsingsFromFile("C:\\_VSFiles\\Projects\\PC Solutions\\AppDeckAssistant\\csprojusings.txt");
+            string ToRemoveUsings = "C:\\_VSFiles\\Projects\\PC Solutions\\AppDeckAssistant\\csprojusings_toremove.txt";
+
+            // Garante que o arquivo seja criado e fechado corretamente
+            if (!File.Exists(ToRemoveUsings))
+            {
+                using (File.Create(ToRemoveUsings)) { }
+            }
+
+            string notUsed = NotUsedUsings(ProjUsings, CSProjUsings);
+
+            if (!string.IsNullOrEmpty(notUsed))
+            {
+                File.WriteAllText(ToRemoveUsings, $"Remove Usings:\r\n{notUsed}");
+            }
+            else
+            {
+                File.WriteAllText(ToRemoveUsings, "Nenhum using para remover.");
+            }
+        }
+
+        public string ListUsings(string directoryPath)
+        {
+            HashSet<string> usingsWithEqual = new HashSet<string>();  // Para 'using' com '='
+            HashSet<string> usingsSet = new HashSet<string>();  // Para 'using' sem '='
+
+            // Verifica se o diretório existe
+            if (Directory.Exists(directoryPath))
+            {
+                // Obtém todos os arquivos .cs no diretório e subdiretórios
+                var csFiles = Directory.GetFiles(directoryPath, "*.cs", SearchOption.AllDirectories);
+
+                foreach (var file in csFiles)
+                {
+                    // Lê o conteúdo do arquivo
+                    var fileContent = File.ReadLines(file);
+
+                    // Filtra as linhas que começam com 'using'
+                    foreach (var line in fileContent)
+                    {
+                        var trimmedLine = line.Trim();
+
+                        if (trimmedLine.StartsWith("using") && !trimmedLine.Contains("("))  // Ignora 'using' de objetos
+                        {
+                            if (trimmedLine.Contains("="))  // Se contém '=', adiciona à lista separada
+                            {
+                                usingsWithEqual.Add(trimmedLine);
+                            }
+                            else  // Caso contrário, adiciona à lista normal
+                            {
+                                usingsSet.Add(trimmedLine);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                throw new DirectoryNotFoundException("O diretório especificado não foi encontrado.");
+            }
+
+            // Ordena ambas as listas e as concatena
+            var sortedUsingsWithEqual = usingsWithEqual.OrderBy(u => u).ToList();
+            var sortedUsings = usingsSet.OrderBy(u => u).ToList();
+
+            // Junta as listas, com as que têm '=' no início
+            var finalUsings = sortedUsingsWithEqual.Concat(sortedUsings).ToList();
+
+            return string.Join(Environment.NewLine, finalUsings);
+        }
+
+        public string ExtractUsingsFromFile(string filePath)
+        {
+            HashSet<string> usingsSet = new HashSet<string>();  // Para garantir que não há duplicatas
+
+            // Verifica se o arquivo existe
+            if (File.Exists(filePath))
+            {
+                // Lê o conteúdo do arquivo
+                var fileContent = File.ReadLines(filePath);
+
+                // Expressões regulares para identificar as referências
+                string referencePattern = @"<Reference Include=""([^""]+)"" />";
+                string packagePattern = @"<PackageReference Include=""([^""]+)""[^>]*>";
+
+                // Processa as linhas do arquivo
+                foreach (var line in fileContent)
+                {
+                    // Verifica se a linha contém uma referência de <Reference> ou <PackageReference>
+                    Match referenceMatch = Regex.Match(line, referencePattern);
+                    Match packageMatch = Regex.Match(line, packagePattern);
+
+                    if (referenceMatch.Success)
+                    {
+                        // Adiciona o namespace extraído à lista de usings
+                        usingsSet.Add("using " + referenceMatch.Groups[1].Value + ";");
+                    }
+                    else if (packageMatch.Success)
+                    {
+                        // Adiciona o pacote extraído à lista de usings
+                        usingsSet.Add("using " + packageMatch.Groups[1].Value + ";");
+                    }
+                }
+            }
+            else
+            {
+                throw new FileNotFoundException("O arquivo especificado não foi encontrado.");
+            }
+
+            // Ordena e retorna as diretivas 'using' como uma string
+            var sortedUsings = usingsSet.OrderBy(u => u).ToList();
+            return string.Join(Environment.NewLine, sortedUsings);
+        }
+
+        public string NotUsedUsings(string folderUsings, string docUsings)
+        {
+            // Converte as strings em listas e remove espaços em branco
+            var folderList = folderUsings.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                                         .Select(u => u.Trim().Replace("using ", "").Replace(";", ""))
+                                         .ToList();
+
+            var docList = docUsings.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                                   .Select(u => u.Trim().Replace("using ", "").Replace(";", ""))
+                                   .ToList();
+
+            // Filtra os usings que não estão na lista do folder (considerando hierarquia)
+            var notUsed = docList.Where(docUsing =>
+                !folderList.Any(folderUsing => docUsing == folderUsing || docUsing.StartsWith(folderUsing + ".")))
+                .Distinct()
+                .OrderBy(u => u) // Ordena alfabeticamente
+                .ToList();
+
+            // Converte de volta para o formato de "using Namespace;"
+            return string.Join(Environment.NewLine, notUsed.Select(u => $"using {u};"));
         }
 
         private void CarregarListaDeArquivo(string caminhoArquivo)
@@ -655,7 +793,7 @@ namespace AppDeckAssistant
                 {
                     Directory.CreateDirectory(caminhoTemp);
                 }
-                
+
                 // Copiar os banners para a pasta @Reload, renomeando-os conforme a posição na listGames
                 for (int i = 0; i < listGames.Items.Count; i++)
                 {

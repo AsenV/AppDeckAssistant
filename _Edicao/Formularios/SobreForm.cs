@@ -1,8 +1,6 @@
 ﻿using MetroFramework;
 using System;
-using System.Diagnostics;
 using System.Drawing;
-using System.Reflection;
 
 namespace AppDeckAssistant
 {
