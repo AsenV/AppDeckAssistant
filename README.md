@@ -18,8 +18,8 @@
 ---
 
 ## 🚀 Features
-[![Free Version](https://img.shields.io/badge/Free%20Version-Download-blue)](https://www.deviantart.com/asenv/art/AppDeck-985147123)
-[![PRO Version](https://img.shields.io/badge/PRO%20Version-Download-orange)](https://buy.stripe.com/8wMbIO1Hg6Kw4Ew002)
+[![Free Version](https://img.shields.io/badge/Download-Free%20Version-blue)](https://www.deviantart.com/asenv/art/AppDeck-985147123)
+[![PRO Version](https://img.shields.io/badge/Download-PRO%20Version-orange)](https://buy.stripe.com/8wMbIO1Hg6Kw4Ew002)
 
 
 ### Free Version:
