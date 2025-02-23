@@ -2,7 +2,7 @@
 
 **AppDeck Assistant** helps you manage and launch games and apps seamlessly with Rainmeter. It offers smooth page transitions, easy game management, and more.
 
-![appdeckpro](https://github.com/user-attachments/assets/13d74bda-1884-455d-851a-7b46cce2bb67)
+![appdeckpro assistant](https://github.com/user-attachments/assets/00273bc2-3301-40e6-a8dd-cfeff7fc199a)
 
 ---
 
